@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using libbmp;
 
 namespace Grayscaler
@@ -9,6 +10,9 @@ namespace Grayscaler
     {
         static void Main(string[] args)
         {
+            if (args.Length == 0)
+                args = new[]
+                    {Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().FullName), "sample.bmp")};
             var sw = Stopwatch.StartNew();
             var picture = imageprocessor.load(args[0]);
             var greyscalePicture = imageprocessor.grayscale(picture);

@@ -12,5 +12,11 @@
     <ItemGroup>
       <ProjectReference Include="..\libbmp\libbmp.fsproj" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <None Update="sample.bmp">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 
 </Project>
