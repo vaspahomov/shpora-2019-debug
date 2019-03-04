@@ -46,6 +46,8 @@ namespace Top
                     Cpu = (currentTimes - prevTimes) / (double) period.Ticks / Environment.ProcessorCount
                 });
             });
+            
+            
 
             times = newTimes;
             
@@ -55,7 +57,10 @@ namespace Top
                 Timestamp = DateTime.UtcNow,
                 MachineName = Environment.MachineName
             };
-            Task.Run(() => MetricsAvailable(this, metricsCollection));
+            processes = null;
+            var task = Task.Run(() => MetricsAvailable(this, metricsCollection));
+            task.Dispose();
+            metricsCollection = null;
         }
 
         private static unsafe string GetProcessName(IntPtr namePtr)

@@ -13,7 +13,7 @@ namespace WinDbg.Demo.Misc
                 ClassState = Tuple.Create(123, "Hello"),
                 StructState = (987, "WinDbg!")
             };
-
+            //load from core soslr
             Thread.Sleep(Timeout.Infinite);
         }
 

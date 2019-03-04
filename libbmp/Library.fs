@@ -22,7 +22,7 @@ module imageprocessor =
             i <- step i
             done
 
-    let private count<'t> (a: IList<'t>) = a.LongCount () |> int32
+    let private count<'t> (a: IList<'t>) = a.Count 
 
     let inline private arrayloop<'t> (array: IList<'t>) (func : int32 -> _) =
         forloop
@@ -39,8 +39,6 @@ module imageprocessor =
         
         arrayloop list (fun i -> list.Item i <- Array.zeroCreate size)
         
-    let private wtf = Task.Delay 6000 |> Task.WaitAll
-    
     let private extractchannel (bmp: Bitmap) (selector: Color -> byte) =
         let a = Array.zeroCreate<d1d> bmp.Height
         azaza a bmp.Width
@@ -52,8 +50,12 @@ module imageprocessor =
                 Array.set a.[y] x (double(pixel))
             )
         a
-
+    
+//    let private extractchannel (bmp: Bitmap)  =
+    
     let private bmpToPicture (bmp : Bitmap) =
+//        let pixel = bmp.GetPixel(x, y) |> selector
+        
         let r = extractchannel bmp (fun c -> c.R)
         let g = extractchannel bmp (fun c -> c.G)
         let b = extractchannel bmp (fun c -> c.B)
@@ -66,7 +68,6 @@ module imageprocessor =
         let r, g, b = pic.r, pic.g, pic.b
         let a = Array.zeroCreate<d1d> (count r)
         azaza a (count r.[0])
-        wtf
         
         for color in [r; g; b] do
             array2dloop

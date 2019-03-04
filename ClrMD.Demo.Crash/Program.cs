@@ -8,7 +8,7 @@ namespace ClrMD.Demo.Crash
         static void Main(string[] args)
         {
             //DataTarget dataTarget = DataTarget.AttachToProcess(pid, msTimeout, AttachFlag.NonInvasive);
-            using (var dt = DataTarget.LoadCrashDump(@"C:\dumps\dotnet.exe.11412.dmp"))
+            using (var dt = DataTarget.LoadCrashDump(@"C:\dumps\dotnet.exe.5736.dmp"))
             {
                 foreach (ClrInfo version in dt.ClrVersions)
                 {
