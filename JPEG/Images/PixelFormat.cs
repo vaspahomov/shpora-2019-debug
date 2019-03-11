@@ -19,21 +19,21 @@
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() != this.GetType()) return false;
+            if (obj.GetType() != GetType()) return false;
             return Equals((PixelFormat) obj);
         }
 
         public override int GetHashCode()
         {
-            return (Format != null ? Format.GetHashCode() : 0);
+            return Format != null ? Format.GetHashCode() : 0;
         }
 
-        public static bool operator==(PixelFormat a, PixelFormat b)
+        public static bool operator ==(PixelFormat a, PixelFormat b)
         {
             return a.Equals(b);
         }
-		
-        public static bool operator!=(PixelFormat a, PixelFormat b)
+
+        public static bool operator !=(PixelFormat a, PixelFormat b)
         {
             return !a.Equals(b);
         }
@@ -42,7 +42,7 @@
         {
             return Format;
         }
-        
+
         ~PixelFormat()
         {
             Format = null;

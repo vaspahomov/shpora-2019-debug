@@ -10,17 +10,18 @@ namespace JPEG
         private const string Kernel32 = "kernel32.dll";
         private const string User32 = "user32.dll";
 
-    
+
         [DllImport(Psapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool GetProcessMemoryInfo(IntPtr hProcess, out PROCESS_MEMORY_COUNTERS_EX counters, Int32 cb);
+        public static extern bool
+            GetProcessMemoryInfo(IntPtr hProcess, out PROCESS_MEMORY_COUNTERS_EX counters, int cb);
     }
-    
+
     [StructLayout(LayoutKind.Sequential)]
     public struct PROCESS_MEMORY_COUNTERS_EX
     {
-        public Int32 cb;
-        public Int32 PageFaultCount;
+        public int cb;
+        public int PageFaultCount;
         public IntPtr PeakWorkingSetSize;
         public IntPtr WorkingSetSize;
         public IntPtr QuotaPeakPagedPoolUsage;
@@ -34,7 +35,7 @@ namespace JPEG
 
     public static class MemoryMeter
     {
-        private static Process process = Process.GetCurrentProcess();
+        private static readonly Process process = Process.GetCurrentProcess();
 
         public static long PrivateBytes()
         {
