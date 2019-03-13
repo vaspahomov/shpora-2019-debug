@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using JPEG.Images;
-using PixelFormat = JPEG.Images.PixelFormat;
 
 namespace JPEG
 {
@@ -62,7 +61,7 @@ namespace JPEG
 
             for (var y = 0; y < matrix.Height; y += DCTSize)
             for (var x = 0; x < matrix.Width; x += DCTSize)
-                foreach (var selector in new Func<Pixel, double>[] {p => p.Y, p => p.Cb, p => p.Cr})
+                foreach (var selector in new Func<PixelYCbCr, double>[] {p => p.Y, p => p.Cb, p => p.Cr})
                 {
                     var subMatrix = GetSubMatrix(matrix, y, DCTSize, x, DCTSize, selector);
                     ShiftMatrixValues(subMatrix, -128);
@@ -85,10 +84,11 @@ namespace JPEG
 
         private static Matrix Uncompress(CompressedImage image)
         {
-            var result = new Matrix(image.Height, image.Width);
+            var pixels = new PixelRgb[image.Height, image.Width];
             using (var allQuantizedBytes =
                 new MemoryStream(HuffmanCodec.Decode(image.CompressedBytes, image.DecodeTable, image.BitsCount)))
             {
+                var offset = 0;
                 for (var y = 0; y < image.Height; y += DCTSize)
                 for (var x = 0; x < image.Width; x += DCTSize)
                 {
@@ -98,17 +98,18 @@ namespace JPEG
                     foreach (var channel in new[] {_y, cb, cr})
                     {
                         var quantizedBytes = new byte[DCTSize * DCTSize];
-                        allQuantizedBytes.ReadAsync(quantizedBytes, 0, quantizedBytes.Length).Wait();
+                        allQuantizedBytes.Read(quantizedBytes, 0, quantizedBytes.Length);
                         var quantizedFreqs = ZigZagUnScan(quantizedBytes);
                         var channelFreqs = DeQuantize(quantizedFreqs, image.Quality);
                         DCT.IDCT2D(channelFreqs, channel);
                         ShiftMatrixValues(channel, 128);
+                        offset += quantizedBytes.Length;
                     }
 
-                    SetPixels(result, _y, cb, cr, PixelFormat.YCbCr, y, x);
+                    SetPixels(pixels, _y, cb, cr, y, x);
                 }
             }
-
+            var result = new Matrix(pixels);
             return result;
         }
 
@@ -122,24 +123,27 @@ namespace JPEG
                 subMatrix[y, x] = subMatrix[y, x] + shiftValue;
         }
 
-        private static void SetPixels(Matrix matrix, double[,] a, double[,] b, double[,] c, PixelFormat format,
-            int yOffset, int xOffset)
+        private static void SetPixels(PixelRgb[,] pixels, double[,] a, double[,] b, double[,] c, int yOffset, int xOffset)
         {
             var height = a.GetLength(0);
             var width = a.GetLength(1);
 
             for (var y = 0; y < height; y++)
             for (var x = 0; x < width; x++)
-                matrix.Pixels[yOffset + y, xOffset + x] = new Pixel(a[y, x], b[y, x], c[y, x], format);
+                pixels[yOffset + y, xOffset + x] = PixelRgb.FromYCbCr(a[y, x], b[y, x], c[y, x]);
         }
 
         private static double[,] GetSubMatrix(Matrix matrix, int yOffset, int yLength, int xOffset, int xLength,
-            Func<Pixel, double> componentSelector)
+            Func<PixelYCbCr, double> componentSelector)
         {
             var result = new double[yLength, xLength];
             for (var j = 0; j < yLength; j++)
             for (var i = 0; i < xLength; i++)
-                result[j, i] = componentSelector(matrix.Pixels[yOffset + j, xOffset + i]);
+            {
+                var pixel = matrix.Pixels[yOffset + j, xOffset + i];
+                result[j, i] = componentSelector(PixelYCbCr.FromRGB(pixel.R, pixel.G, pixel.B));
+            }
+
             return result;
         }
 
