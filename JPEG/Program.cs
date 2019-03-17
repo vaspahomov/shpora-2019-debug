@@ -60,7 +60,10 @@ namespace JPEG
         public static void CompressSingleBlock(
             Matrix matrix, 
             byte[] allQuantizedBytes, 
-            int quality, int offset, int x, int y)
+            int quality, 
+            int offset, 
+            int x, int y,
+            DCT dct)
         {
             var selectors = new (int, Func<PixelYCbCr, double>)[]
             {
@@ -72,7 +75,7 @@ namespace JPEG
             {
                 var subMatrix = GetSubMatrix(matrix, y, DCTSize, x, DCTSize, selector.Item2);
                 ShiftMatrixValues(subMatrix, -128);
-                var channelFreqs = DCT.DCT2D(subMatrix);
+                var channelFreqs = dct.DCT2D(subMatrix);
                 var quantizedFreqs = Quantize(channelFreqs, quality);
                 var quantizedBytes = ZigZagScan(quantizedFreqs);
                 Buffer.BlockCopy(quantizedBytes, 0, allQuantizedBytes, offset + selector.Item1 * DCTSize * DCTSize, DCTSize * DCTSize);
@@ -95,7 +98,8 @@ namespace JPEG
             }
 
 //            var tasks = new List<Task>();
-
+            var dct = new DCT();
+            dct.DCTInit(DCTSize, DCTSize);
             Parallel.ForEach(indexes, (index) =>
             {
                 var x1 = index.X;
@@ -103,7 +107,7 @@ namespace JPEG
 
                 var offset1 = index.Offset;
 //                tasks.Add(new Task(() =>
-                    CompressSingleBlock(matrix, allQuantizedBytes, quality, offset1, x1, y1);
+                    CompressSingleBlock(matrix, allQuantizedBytes, quality, offset1, x1, y1, dct);
             });
 //            for (var y = 0; y < matrix.Height; y += DCTSize)
 //            for (var x = 0; x < matrix.Width; x += DCTSize)
@@ -131,7 +135,8 @@ namespace JPEG
             CompressedImage image,
             PixelRgb[,] pixels,
             byte[] yBytes, byte[] cbBytes, byte[] crBytes,
-            int x, int y)
+            int x, int y,
+            DCT dct)
         {
             var _y = new double[DCTSize, DCTSize];
             var cb = new double[DCTSize, DCTSize];
@@ -142,7 +147,7 @@ namespace JPEG
                 var quantizedFreqs = ZigZagUnScan(channel.Item2);
                 var channelFreqs = DeQuantize(quantizedFreqs, image.Quality);
 
-                DCT.IDCT2D(channelFreqs, channel.Item1);
+                dct.IDCT2D(channelFreqs, channel.Item1);
                 ShiftMatrixValues(channel.Item1, 128);
             }
 
@@ -176,10 +181,12 @@ namespace JPEG
                 offset += crBytes.Length;
                 data.Add((yBytes, cbBytes, crBytes, x, y));
             }
-
+            var dct = new DCT();
+            dct.DCTInit(DCTSize, DCTSize);
+            
             Parallel.ForEach(data, (block) =>
                 {
-                    UncompressSingleBlock(image, pixels, block.Y, block.Cb, block.Cr, block.x, block.y);
+                    UncompressSingleBlock(image, pixels, block.Y, block.Cb, block.Cr, block.x, block.y, dct);
                 });
 //            var x1 = x;
 //                var y1 = y;

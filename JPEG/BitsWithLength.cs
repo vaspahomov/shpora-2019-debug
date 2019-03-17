@@ -15,7 +15,7 @@ namespace JPEG
         
         public override bool Equals(object o)
         {
-            return GetHashCode() == o.GetHashCode();
+//            return GetHashCode() == o.GetHashCode();
             if (GetHashCode() != o.GetHashCode()) return false;
             var bitsWithLength = default(BitsWithLength);
             if ((o is BitsWithLength length))
