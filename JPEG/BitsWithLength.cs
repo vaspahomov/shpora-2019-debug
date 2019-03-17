@@ -2,27 +2,43 @@
 
 namespace JPEG
 {
-    public class BitsWithLength
+    public struct BitsWithLength
     {
-        public int Bits { get; set; }
-        public int BitsCount { get; set; }
-
-        public class Comparer : IEqualityComparer<BitsWithLength>
+        public BitsWithLength(int bits, int bitsCount)
         {
-            public bool Equals(BitsWithLength x, BitsWithLength y)
-            {
-                if (x == y) return true;
-                if (x == null || y == null)
-                    return false;
-                return x.BitsCount == y.BitsCount && x.Bits == y.Bits;
-            }
+            Bits = bits;
+            BitsCount = bitsCount;
+        }
 
-            public int GetHashCode(BitsWithLength obj)
+        public int Bits { get; set; }
+        public int BitsCount { get; set;}
+        
+        public override bool Equals(object o)
+        {
+            return GetHashCode() == o.GetHashCode();
+            if (GetHashCode() != o.GetHashCode()) return false;
+            var bitsWithLength = default(BitsWithLength);
+            if ((o is BitsWithLength length))
+                bitsWithLength = length;
+                return bitsWithLength.BitsCount == BitsCount && bitsWithLength.Bits == Bits;
+        }
+        
+        public override int GetHashCode()
+        {
+            unchecked
             {
-                if (obj == null)
-                    return 0;
-                return ((397 * obj.Bits) << 5) ^ (17 * obj.BitsCount);
+                return (Bits * 397) ^ BitsCount;
             }
         }
+
+//
+//        public class Comparer : IEqualityComparer<BitsWithLength>
+//        {
+//            public bool Equals(BitsWithLength x, BitsWithLength y)
+//            {
+//                if (GetHashCode(x) != GetHashCode(y)) return false;
+//                return x.BitsCount == y.BitsCount && x.Bits == y.Bits;
+//            }
+//        }
     }
 }

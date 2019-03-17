@@ -3,7 +3,7 @@ using System.Drawing.Imaging;
 
 namespace JPEG.Images
 {
-    internal class Matrix
+    public class Matrix
     {
         public readonly int Height;
         public readonly PixelRgb[,] Pixels;

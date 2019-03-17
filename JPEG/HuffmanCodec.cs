@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace JPEG
 {
     internal static class HuffmanCodec
     {
-        public static byte[] Encode(IEnumerable<byte> data, out Dictionary<BitsWithLength, byte> decodeTable,
+        public static byte[] Encode(byte[] data, out Dictionary<BitsWithLength, byte> decodeTable,
             out long bitsCount)
         {
             var frequences = CalcFrequences(data);
@@ -23,8 +24,7 @@ namespace JPEG
             return bitsBuffer.ToArray(out bitsCount);
         }
 
-        public static byte[] Decode(byte[] encodedData, Dictionary<BitsWithLength, byte> decodeTable,
-            long bitsCount)
+        public static byte[] Decode(byte[] encodedData, Dictionary<BitsWithLength, byte> decodeTable, long bitsCount)
         {
             var result = new List<byte>();
 
@@ -36,15 +36,14 @@ namespace JPEG
                 {
                     sample.Bits = (sample.Bits << 1) + ((b & (1 << (8 - bitNum - 1))) != 0 ? 1 : 0);
                     sample.BitsCount++;
+                    
+                    if (!decodeTable.ContainsKey(sample)) continue;
+                    var decodedByte = decodeTable[sample];
+                    
+                    result.Add(decodedByte);
 
-                    byte decodedByte;
-                    if (decodeTable.TryGetValue(sample, out decodedByte))
-                    {
-                        result.Add(decodedByte);
-
-                        sample.BitsCount = 0;
-                        sample.Bits = 0;
-                    }
+                    sample.BitsCount = 0;
+                    sample.Bits = 0;
                 }
             }
 
@@ -53,13 +52,11 @@ namespace JPEG
 
         private static Dictionary<BitsWithLength, byte> CreateDecodeTable(BitsWithLength[] encodeTable)
         {
-            var result = new Dictionary<BitsWithLength, byte>(new BitsWithLength.Comparer());
+            var result = new Dictionary<BitsWithLength, byte>();
             for (var b = 0; b < encodeTable.Length; b++)
             {
                 var bitsWithLength = encodeTable[b];
-                if (bitsWithLength == null)
-                    continue;
-
+                
                 result[bitsWithLength] = (byte) b;
             }
 
@@ -91,9 +88,9 @@ namespace JPEG
             return encodeTable;
         }
 
-        private static HuffmanNode BuildHuffmanTree(int[] frequences)
+        private static HuffmanNode BuildHuffmanTree(byte[] frequences)
         {
-            var nodes = new HashSet<HuffmanNode>(GetNodes(frequences));
+            var nodes = GetNodes(frequences);
 
             while (nodes.Count > 1)
             {
@@ -125,18 +122,27 @@ namespace JPEG
             return minNode;
         }
 
-        private static IEnumerable<HuffmanNode> GetNodes(int[] frequences)
+        private static HashSet<HuffmanNode> GetNodes(byte[] frequences)
         {
-            return Enumerable.Range(0, byte.MaxValue + 1)
-                .Select(num => new HuffmanNode {Frequency = frequences[num], LeafLabel = (byte) num})
-                .Where(node => node.Frequency > 0);
+            var result = new HashSet<HuffmanNode>();
+            for (var i = 0; i < byte.MaxValue + 1; i++)
+                if (frequences[i] > 0)
+                    result.Add(new HuffmanNode {Frequency = frequences[i], LeafLabel = (byte) i});
+            return result;
+//            return Enumerable.Range(0, byte.MaxValue + 1)
+//                .Select(num => new HuffmanNode {Frequency = frequences[num], LeafLabel = (byte) num})
+//                .Where(node => node.Frequency > 0);
         }
 
-        private static int[] CalcFrequences(IEnumerable<byte> data)
+        private static byte[] CalcFrequences(byte[] data)
         {
-            var result = new int[byte.MaxValue + 1];
-            foreach (var singleByte in data)
-                result[singleByte]++;
+            var result = new byte[byte.MaxValue + 1];
+            foreach (var t in data)
+            {
+                result[t]++;
+            }
+//            foreach (var singleByte in data)
+//                result[singleByte]++;
             return result;
         }
     }

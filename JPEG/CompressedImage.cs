@@ -77,7 +77,7 @@ namespace JPEG
                 sr.Read(buffer, 0, 4);
                 var decodeTableSize = BitConverter.ToInt32(buffer, 0);
                 result.DecodeTable =
-                    new Dictionary<BitsWithLength, byte>(decodeTableSize, new BitsWithLength.Comparer());
+                    new Dictionary<BitsWithLength, byte>(decodeTableSize);
 
                 for (var i = 0; i < decodeTableSize; i++)
                 {
@@ -88,7 +88,7 @@ namespace JPEG
                     var bitsCount = BitConverter.ToInt32(buffer, 0);
 
                     var mappedByte = (byte) sr.ReadByte();
-                    result.DecodeTable[new BitsWithLength {Bits = bits, BitsCount = bitsCount}] = mappedByte;
+                    result.DecodeTable[new BitsWithLength (bits, bitsCount)] = mappedByte;
                 }
 
                 sr.Read(buffer, 0, 8);

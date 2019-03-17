@@ -5,7 +5,7 @@ namespace JPEG
     internal class BitsBuffer
     {
         private readonly List<byte> buffer = new List<byte>();
-        private readonly BitsWithLength unfinishedBits = new BitsWithLength();
+        private BitsWithLength unfinishedBits;
 
         public void Add(BitsWithLength bitsWithLength)
         {
@@ -19,9 +19,7 @@ namespace JPEG
                 buffer.Add((byte) ((unfinishedBits.Bits << neededBits) + (bits >> bitsCount)));
 
                 bits = bits & ((1 << bitsCount) - 1);
-
-                unfinishedBits.Bits = 0;
-                unfinishedBits.BitsCount = 0;
+                unfinishedBits = new BitsWithLength (0, 0);
 
                 neededBits = 8;
             }
