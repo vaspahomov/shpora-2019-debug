@@ -66,7 +66,7 @@ namespace JPEG
             int x, int y,
             DCT dct)
         {
-            var selectors = new (int, Func<PixelYCbCr, double>)[]
+            var selectors = new (int, Func<PixelYCbCr, int>)[]
             {
                 (0, p => p.Y), 
                 (1, p => p.Cb), 
@@ -122,9 +122,9 @@ namespace JPEG
             int x, int y,
             DCT dct)
         {
-            var _y = new double[DCTSize, DCTSize];
-            var cb = new double[DCTSize, DCTSize];
-            var cr = new double[DCTSize, DCTSize];
+            var _y = new int[DCTSize, DCTSize];
+            var cb = new int[DCTSize, DCTSize];
+            var cr = new int[DCTSize, DCTSize];
 
             foreach (var channel in new[] {(_y, yBytes), (cb, cbBytes), (cr, crBytes)})
             {
@@ -196,7 +196,7 @@ namespace JPEG
             return result;
         }
 
-        private static void ShiftMatrixValues(double[,] subMatrix, int shiftValue)
+        private static void ShiftMatrixValues(int[,] subMatrix, int shiftValue)
         {
             var height = subMatrix.GetLength(0);
             var width = subMatrix.GetLength(1);
@@ -206,7 +206,7 @@ namespace JPEG
                 subMatrix[y, x] = subMatrix[y, x] + shiftValue;
         }
 
-        private static void SetPixels(PixelRgb[,] pixels, double[,] a, double[,] b, double[,] c, int yOffset,
+        private static void SetPixels(PixelRgb[,] pixels, int[,] a, int[,] b, int[,] c, int yOffset,
             int xOffset)
         {
             var height = a.GetLength(0);
@@ -217,10 +217,10 @@ namespace JPEG
                 pixels[yOffset + y, xOffset + x] = PixelRgb.FromYCbCr(a[y, x], b[y, x], c[y, x]);
         }
 
-        private static double[,] GetSubMatrix(Matrix matrix, int yOffset, int yLength, int xOffset, int xLength,
-            Func<PixelYCbCr, double> componentSelector)
+        private static int[,] GetSubMatrix(Matrix matrix, int yOffset, int yLength, int xOffset, int xLength,
+            Func<PixelYCbCr, int> componentSelector)
         {
-            var result = new double[yLength, xLength];
+            var result = new int[yLength, xLength];
             for (var j = 0; j < yLength; j++)
             for (var i = 0; i < xLength; i++)
             {

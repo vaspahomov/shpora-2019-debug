@@ -23,12 +23,11 @@ namespace JPEG
                 CossY[y, v] = Math.Cos((2d * y + 1d) * v * Math.PI / (2 * height));
         }
 
-        public double[,] DCT2D(double[,] input)
+        public double[,] DCT2D(int[,] input)
         {
             var height = input.GetLength(0);
             var width = input.GetLength(1);
             
-//            DCTInit2(width, height);
             var coeffs = new double[width, height];
             var betta = 1d / width + 1d / height;
             for (var x = 0; x < width; x++)
@@ -38,20 +37,17 @@ namespace JPEG
                 for (var u = 0; u < width; u++)
                 for (var v = 0; v < height; v++)
                     sum += input[u, v] * BasisFunction(x, y, u, v, height, width);
-//                CossX[x, u] * CossY[y, v]
-//                BasisFunction(x, y, u, v, height, width)
                 coeffs[x, y] = sum * betta * Alpha(x) * Alpha(y);
             }
 
             return coeffs;
         }
 
-        public void IDCT2D(double[,] coeffs, double[,] output)
+        public void IDCT2D(double[,] coeffs, int[,] output)
         {
             var height = coeffs.GetLength(0);
             var width = coeffs.GetLength(1);
             
-//            DCTInit(width, height);
             var betta = 1d / width + 1d / height;
             for (var x = 0; x < width; x++)
             for (var y = 0; y < height; y++)
@@ -60,16 +56,12 @@ namespace JPEG
                 for (var u = 0; u < width; u++)
                 for (var v = 0; v < height; v++)
                     sum += coeffs[u, v] * BasisFunction(u, v, x, y, height, width)  * Alpha(u) * Alpha(v);
-//                BasisFunction(u, v, x, y, height, width) 
-//                CossX[x, u] * CossY[y, v]
-                output[x, y] = sum * betta;
+                output[x, y] = (int) (sum * betta);
             }
         }
 
         private double BasisFunction(int u, int v, int x, int y, int height, int width)
         {
-//            var b = Math.Cos((2d * x + 1d) * u * Math.PI / (2 * width));
-//            var c = Math.Cos((2d * y + 1d) * v * Math.PI / (2 * height));
             var b = CossX[x, u];
             var c = CossY[y, v];
 
