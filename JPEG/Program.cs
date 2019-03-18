@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using JPEG.Images;
@@ -79,7 +80,6 @@ namespace JPEG
                 var quantizedFreqs = Quantize(channelFreqs, quality);
                 var quantizedBytes = ZigZagScan(quantizedFreqs);
                 Buffer.BlockCopy(quantizedBytes, 0, allQuantizedBytes, offset + selector.Item1 * DCTSize * DCTSize, DCTSize * DCTSize);
-//                offset += DCTSize * DCTSize;
             }
         }
         
@@ -97,7 +97,6 @@ namespace JPEG
                 offset += 3 * DCTSize * DCTSize;
             }
 
-//            var tasks = new List<Task>();
             var dct = new DCT();
             dct.DCTInit(DCTSize, DCTSize);
             Parallel.ForEach(indexes, (index) =>
@@ -106,27 +105,12 @@ namespace JPEG
                 var y1 = index.Y;
 
                 var offset1 = index.Offset;
-//                tasks.Add(new Task(() =>
                     CompressSingleBlock(matrix, allQuantizedBytes, quality, offset1, x1, y1, dct);
             });
-//            for (var y = 0; y < matrix.Height; y += DCTSize)
-//            for (var x = 0; x < matrix.Width; x += DCTSize)
-//            {
-//                
-//            }
-//
-//            var tasksArr = tasks.ToArray();
-//            foreach (var task in tasksArr)
-//                task.Start();
-//            Task.WaitAll(tasksArr);
             
-            long bitsCount;
-            Dictionary<BitsWithLength, byte> decodeTable;
-            var compressedBytes = HuffmanCodec.Encode(allQuantizedBytes, out decodeTable, out bitsCount);
-
             return new CompressedImage
             {
-                Quality = quality, CompressedBytes = compressedBytes, BitsCount = bitsCount, DecodeTable = decodeTable,
+                Quality = quality, CompressedBytes = CompressBytes(allQuantizedBytes),
                 Height = matrix.Height, Width = matrix.Width
             };
         }
@@ -157,13 +141,32 @@ namespace JPEG
             }
         }
 
+        private static byte[] CompressBytes(byte[] data)
+        {
+            var output = new MemoryStream();
+            using (var dstream = new DeflateStream(output, CompressionLevel.Optimal))
+            {
+                dstream.Write(data, 0, data.Length);
+            }
+            return output.ToArray();
+        }
+
+        private static byte[] DecompressBytes(byte[] data)
+        {
+            var input = new MemoryStream(data);
+            var output = new MemoryStream();
+            using (var dstream = new DeflateStream(input, CompressionMode.Decompress))
+            {
+                dstream.CopyTo(output);
+            }
+            return output.ToArray();
+        }
+
         public static Matrix Uncompress(CompressedImage image)
         {
             var offset = 0;
             var pixels = new PixelRgb[image.Height, image.Width];
-            var buffer = HuffmanCodec.Decode(image.CompressedBytes, image.DecodeTable,
-                image.BitsCount);
-
+            var buffer = DecompressBytes(image.CompressedBytes);
 
             var data = new List<(byte[] Y, byte[] Cb, byte[] Cr, int x, int y)>();
             for (var y = 0; y < image.Height; y += DCTSize)
@@ -188,16 +191,6 @@ namespace JPEG
                 {
                     UncompressSingleBlock(image, pixels, block.Y, block.Cb, block.Cr, block.x, block.y, dct);
                 });
-//            var x1 = x;
-//                var y1 = y;
-//                tasks.Add(new Task(() => UncompressSingleBlock(image, pixels, yBytes, cbBytes, crBytes, x1, y1)));
-            
-
-
-//            var tasksArr = tasks.ToArray();
-//            foreach (var task in tasksArr)
-//                task.Start();
-//            Task.WaitAll(tasksArr);
 
             var result = new Matrix(pixels);
             return result;
