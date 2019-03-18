@@ -15,6 +15,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="CenterSpace.NMath" Version="6.2.0.50" />
       <PackageReference Include="System.Drawing.Common" Version="4.5.1" />
     </ItemGroup>
 
@@ -22,6 +23,12 @@
       <None Update="sample.bmp">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="NMath, Version=6.2.0.50, Culture=neutral, PublicKeyToken=873235918a322639">
+        <HintPath>..\..\..\..\..\.nuget\packages\centerspace.nmath\6.2.0.50\lib\net40\NMath.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

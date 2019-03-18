@@ -23,7 +23,9 @@ namespace JPEG
             {
                 Console.WriteLine(IntPtr.Size == 8 ? "64-bit version" : "32-bit version");
                 var sw = Stopwatch.StartNew();
-                var fileName = @"sample.bmp";
+//                var fileName = @"MARBLES.BMP";
+//                var fileName = @"sample.bmp";
+                var fileName = @"earth.bmp";
 //				var fileName = "Big_Black_River_Railroad_Bridge.bmp";
                 var compressedFileName = fileName + ".compressed." + CompressionQuality;
                 var uncompressedFileName = fileName + ".uncompressed." + CompressionQuality + ".bmp";
@@ -72,14 +74,20 @@ namespace JPEG
                 (1, p => p.Cb), 
                 (2,p => p.Cr)
             };
+            var i = 0;
+            
             foreach (var selector in selectors)
             {
                 var subMatrix = GetSubMatrix(matrix, y, DCTSize, x, DCTSize, selector.Item2);
                 ShiftMatrixValues(subMatrix, -128);
+                
                 var channelFreqs = dct.DCT2D(subMatrix);
-                var quantizedFreqs = Quantize(channelFreqs, quality);
+//                var channelFreqs = FFTClass.FFT(subMatrix);
+                
+                var quantizedFreqs = Quantize(channelFreqs, i==0? 70: 60);
                 var quantizedBytes = ZigZagScan(quantizedFreqs);
                 Buffer.BlockCopy(quantizedBytes, 0, allQuantizedBytes, offset + selector.Item1 * DCTSize * DCTSize, DCTSize * DCTSize);
+                i++;
             }
         }
         
@@ -107,7 +115,15 @@ namespace JPEG
                 var offset1 = index.Offset;
                     CompressSingleBlock(matrix, allQuantizedBytes, quality, offset1, x1, y1, dct);
             });
-            
+//            foreach (var index in indexes)
+//            {
+//                var x1 = index.X;
+//                var y1 = index.Y;
+//
+//                var offset1 = index.Offset;
+//                    CompressSingleBlock(matrix, allQuantizedBytes, quality, offset1, x1, y1, dct);
+//            }
+//            
             return new CompressedImage
             {
                 Quality = quality, CompressedBytes = CompressBytes(allQuantizedBytes),
@@ -130,8 +146,9 @@ namespace JPEG
             {
                 var quantizedFreqs = ZigZagUnScan(channel.Item2);
                 var channelFreqs = DeQuantize(quantizedFreqs, image.Quality);
-
+                
                 dct.IDCT2D(channelFreqs, channel.Item1);
+//                var res = FFTClass.FFTBack(channelFreqs, new double[8,8]);
                 ShiftMatrixValues(channel.Item1, 128);
             }
 
@@ -214,17 +231,35 @@ namespace JPEG
 
             for (var y = 0; y < height; y++)
             for (var x = 0; x < width; x++)
-                pixels[yOffset + y, xOffset + x] = PixelRgb.FromYCbCr(a[y, x], b[y, x], c[y, x]);
+            {
+                try
+                {
+                    pixels[yOffset + y, xOffset + x] = PixelRgb.FromYCbCr(a[y, x], b[y, x], c[y, x]);
+                }
+                catch (Exception)
+                {
+                }
+            }
         }
 
         private static int[,] GetSubMatrix(Matrix matrix, int yOffset, int yLength, int xOffset, int xLength,
             Func<PixelYCbCr, int> componentSelector)
         {
             var result = new int[yLength, xLength];
+            
             for (var j = 0; j < yLength; j++)
             for (var i = 0; i < xLength; i++)
             {
-                var pixel = matrix.Pixels[yOffset + j, xOffset + i];
+                PixelRgb pixel;
+                try
+                {
+                    pixel = matrix.Pixels[yOffset + j, xOffset + i];
+                }
+                catch (Exception e)
+                {
+                    pixel = new PixelRgb(0,0,0);
+                }
+                
                 result[j, i] = componentSelector(PixelYCbCr.FromRGB(pixel.R, pixel.G, pixel.B));
             }
 

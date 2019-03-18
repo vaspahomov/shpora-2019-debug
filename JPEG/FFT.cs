@@ -1,77 +1,55 @@
 using System;
-using System.Numerics;
+using CenterSpace.NMath.Core;
 
 namespace JPEG
 {
-    public class FFT
+    class FFTClass
     {
-        /// <summary>
-        ///     Вычисление поворачивающего модуля e^(-i*2*PI*k/N)
-        /// </summary>
-        /// <param name="k"></param>
-        /// <param name="N"></param>
-        /// <returns></returns>
-        private static Complex w(int k, int N)
+        public static (double[,], double[,]) FFT(int[,] inputData)
         {
-            if (k % N == 0) return 1;
-            var arg = -2 * Math.PI * k / N;
-            return new Complex(Math.Cos(arg), Math.Sin(arg));
-        }
+            var fft = new DoubleComplexForward2DFFT(8, 8);
+            var n = inputData.GetLength(0);
+            var m = inputData.GetLength(1);
+            var cfftdata = new DoubleComplexMatrix( fft.Rows, fft.Columns );
+            var data = new DoubleComplexMatrix();
+            for (var i = 0; i < 8; i++)
+            for (var j = 0; j < 8; j++)
+                data[i, j] = inputData[i, j];
+            fft.FFT(data, ref cfftdata);
 
-        /// <summary>
-        ///     Возвращает спектр сигнала
-        /// </summary>
-        /// <param name="x">Массив значений сигнала. Количество значений должно быть степенью 2</param>
-        /// <returns>Массив со значениями спектра сигнала</returns>
-        public static Complex[] fft(Complex[] x)
-        {
-            Complex[] X;
-            var N = x.Length;
-            if (N == 2)
+            var resultReal = new double[8,8];
+            var resultImage = new double[8,8];
+            
+            for (var i = 0; i < 8; i++)
+            for (var j = 0; j < 8; j++)
             {
-                X = new Complex[2];
-                X[0] = x[0] + x[1];
-                X[1] = x[0] - x[1];
-            }
-            else
-            {
-                var x_even = new Complex[N / 2];
-                var x_odd = new Complex[N / 2];
-                for (var i = 0; i < N / 2; i++)
-                {
-                    x_even[i] = x[2 * i];
-                    x_odd[i] = x[2 * i + 1];
-                }
-
-                var X_even = fft(x_even);
-                var X_odd = fft(x_odd);
-                X = new Complex[N];
-                for (var i = 0; i < N / 2; i++)
-                {
-                    X[i] = X_even[i] + w(i, N) * X_odd[i];
-                    X[i + N / 2] = X_even[i] - w(i, N) * X_odd[i];
-                }
+                resultReal[i, j] = (int)cfftdata[i, j].Real;
+                resultImage[i, j] = (int)cfftdata[i, j].Imag;
             }
 
-            return X;
+            return (resultReal, resultImage);
         }
-
-        /// <summary>
-        ///     Центровка массива значений полученных в fft (спектральная составляющая при нулевой частоте будет в центре массива)
-        /// </summary>
-        /// <param name="X">Массив значений полученный в fft</param>
-        /// <returns></returns>
-        public static Complex[] nfft(Complex[] X)
+        public static int[,] FFTBack(double[,] real, double[,] image)
         {
-            var N = X.Length;
-            var X_n = new Complex[N];
-            for (var i = 0; i < N / 2; i++)
+            var fft = new DoubleComplexBackward2DFFT(8, 8);
+            var cfftdata = new DoubleComplexMatrix( fft.Rows, fft.Columns );
+            
+            var data = new DoubleComplexMatrix();
+            
+            for (var i = 0; i < 8; i++)
+            for (var j = 0; j < 8; j++)
+                data[i, j] = new DoubleComplex(real[i, j], image[i,j]);
+            fft.FFT(data, ref cfftdata);
+
+            var resultReal = new int[8,8];
+            
+            for (var i = 0; i < 8; i++)
+            for (var j = 0; j < 8; j++)
             {
-                X_n[i] = X[N / 2 + i];
-                X_n[N / 2 + i] = X[i];
+                resultReal[i, j] = (int)cfftdata[i, j].Real;
             }
 
-            return X_n;
+            return resultReal;
         }
-    }
+    }                  
 }
