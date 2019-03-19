@@ -23,8 +23,8 @@ namespace JPEG
             {
                 Console.WriteLine(IntPtr.Size == 8 ? "64-bit version" : "32-bit version");
                 var sw = Stopwatch.StartNew();
-//                var fileName = @"MARBLES.BMP";
-                var fileName = @"sample.bmp";
+                var fileName = @"MARBLES.BMP";
+//                var fileName = @"sample.bmp";
 //                var fileName = @"earth.bmp";
 //				var fileName = "Big_Black_River_Railroad_Bridge.bmp";
                 var compressedFileName = fileName + ".compressed." + CompressionQuality;
@@ -150,7 +150,7 @@ namespace JPEG
         
         public static CompressedImage Compress(Matrix matrix, int quality = 50)
         {
-            var allQuantizedBytes = new byte[matrix.Height * matrix.Width * 3];
+            var allQuantizedBytes = new byte[matrix.Height * matrix.Width * 4];
             
             var offset = 0;
             
