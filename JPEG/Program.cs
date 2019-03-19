@@ -24,8 +24,8 @@ namespace JPEG
                 Console.WriteLine(IntPtr.Size == 8 ? "64-bit version" : "32-bit version");
                 var sw = Stopwatch.StartNew();
 //                var fileName = @"MARBLES.BMP";
-//                var fileName = @"sample.bmp";
-                var fileName = @"earth.bmp";
+                var fileName = @"sample.bmp";
+//                var fileName = @"earth.bmp";
 //				var fileName = "Big_Black_River_Railroad_Bridge.bmp";
                 var compressedFileName = fileName + ".compressed." + CompressionQuality;
                 var uncompressedFileName = fileName + ".uncompressed." + CompressionQuality + ".bmp";
@@ -82,18 +82,75 @@ namespace JPEG
                 ShiftMatrixValues(subMatrix, -128);
                 
                 var channelFreqs = dct.DCT2D(subMatrix);
-//                var channelFreqs = FFTClass.FFT(subMatrix);
                 
-                var quantizedFreqs = Quantize(channelFreqs, i==0? 70: 60);
+                var quantizedFreqs = Quantize(channelFreqs, i==0? quality + 3: quality - 7);
                 var quantizedBytes = ZigZagScan(quantizedFreqs);
                 Buffer.BlockCopy(quantizedBytes, 0, allQuantizedBytes, offset + selector.Item1 * DCTSize * DCTSize, DCTSize * DCTSize);
                 i++;
             }
         }
+
+        private static (int[,] Y, int[,] Cb, int[,] Cr) GetChannels(PixelYCbCr[,] pixels)
+        {
+            var height = pixels.GetLength(1);
+            var width = pixels.GetLength(0);
+            var yChannel = new int[width, height];
+            var cbChannel = new int[width, height];
+            var crChannel = new int[width, height];
+            
+            for(var x =0; x< width; x++)
+            for (var y = 0; y < height; y++)
+            {
+                yChannel[x, y] = pixels[x, y].Y;
+                cbChannel[x, y] = pixels[x, y].Cb;
+                crChannel[x, y] = pixels[x, y].Cr;
+            }
+
+            return (yChannel, cbChannel, crChannel);
+        }
+        
+        private static int[,] CompressChannel(int[,] pixels)
+        {
+            var height = pixels.GetLength(1);
+            var width = pixels.GetLength(0);
+            var compressed = new int[width/2, height/2];
+            
+            for(var x =0; x < width; x+=2)
+            for (var y = 0; y < height; y+=2)
+            {
+                var sum = 0;
+                sum += pixels[x, y];
+                sum += pixels[x + 1, y];
+                sum += pixels[x, y + 1];
+                sum += pixels[x + 1, y + 1];
+                compressed[x / 2, y / 2] = sum / 4;
+
+            }
+
+            return compressed;
+        }
+        
+        private static int[,] DecompressChannel(int[,] compressed)
+        {
+            var height = compressed.GetLength(1);
+            var width = compressed.GetLength(0);
+            var pixels = new int[width * 2, height * 2];
+            
+            for(var x =0; x < width; x++)
+            for (var y = 0; y < height; y++)
+            {
+                pixels[x * 2, y * 2] = compressed[x, y];
+                pixels[x * 2 + 1, y * 2] = compressed[x, y];
+                pixels[x * 2, y * 2 + 1] = compressed[x, y];
+                pixels[x * 2 + 1, y * 2 + 1] = compressed[x, y];
+            }
+
+            return pixels;
+        }
         
         public static CompressedImage Compress(Matrix matrix, int quality = 50)
         {
-            var allQuantizedBytes = new byte[matrix.Height * matrix.Width * 4];
+            var allQuantizedBytes = new byte[matrix.Height * matrix.Width * 3];
             
             var offset = 0;
             
@@ -107,6 +164,9 @@ namespace JPEG
 
             var dct = new DCT();
             dct.DCTInit(DCTSize, DCTSize);
+
+//            var channels = GetChannels(PixelYCbCr.FromRGB(matrix.Pixels));
+            
             Parallel.ForEach(indexes, (index) =>
             {
                 var x1 = index.X;
@@ -115,15 +175,9 @@ namespace JPEG
                 var offset1 = index.Offset;
                     CompressSingleBlock(matrix, allQuantizedBytes, quality, offset1, x1, y1, dct);
             });
-//            foreach (var index in indexes)
-//            {
-//                var x1 = index.X;
-//                var y1 = index.Y;
-//
-//                var offset1 = index.Offset;
-//                    CompressSingleBlock(matrix, allQuantizedBytes, quality, offset1, x1, y1, dct);
-//            }
-//            
+            
+//            allQuantizedBytes
+            
             return new CompressedImage
             {
                 Quality = quality, CompressedBytes = CompressBytes(allQuantizedBytes),

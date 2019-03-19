@@ -15,7 +15,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="CenterSpace.NMath" Version="6.2.0.50" />
       <PackageReference Include="System.Drawing.Common" Version="4.5.1" />
     </ItemGroup>
 
